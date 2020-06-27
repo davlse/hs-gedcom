@@ -98,7 +98,7 @@ Year (..)
 
 import Data.Gedcom.Internal.CoreTypes
 import Data.Time.Clock
-import qualified Data.Text.All as T
+import qualified Data.Text as T
 
 -- | The root structure
 data Gedcom = Gedcom {

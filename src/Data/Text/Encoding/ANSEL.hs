@@ -24,7 +24,7 @@ import Control.Monad.State (State, evalState, get, put)
 import Data.Array
 import Data.Word
 import qualified Data.ByteString as B
-import qualified Data.Text.All as T
+import qualified Data.Text as T
 
 -- | Decode an ANSEL string to Unicode
 decodeANSEL ::

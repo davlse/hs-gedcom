@@ -25,7 +25,7 @@ module Data.Gedcom.Internal.Parser (
   parseNoLinkTag
 ) where
 
-import Control.Applicative
+import Control.Applicative hiding (many)
 import Control.Monad.Except
 import Data.Bifunctor
 import Data.Dynamic
@@ -35,11 +35,10 @@ import Data.Gedcom.Internal.LineParser
 import Data.Gedcom.Internal.ParseMonads
 import Data.Gedcom.Structure
 import Data.Maybe
-import Data.Monoid
 import Data.Time.Calendar
 import Data.Time.Clock
 import qualified Data.Map.Lazy as M
-import qualified Data.Text.All as T
+import qualified Data.Text as T
 import Text.Megaparsec
 import Text.Megaparsec.Char
 
@@ -208,7 +207,7 @@ parseRestrictionNotice :: StructureParser RestrictionNotice
 parseRestrictionNotice = parseNoLinkTag (GDTag "RESN")$ \(t, _) ->
   case parseMaybe parser (gdIgnoreEscapes t) of
     Nothing -> throwError.FormatError$
-      "Bad restriction notice " <> T.show t
+      "Bad restriction notice " <> (T.pack . show) t
     Just r -> return r
   where parser :: Parser RestrictionNotice
         parser =     (Confidential <$ "confidential")
@@ -332,12 +331,12 @@ parseLongLat ::
 parseLongLat tag p n = parseNoLinkTag tag$ \(t, _) ->
   case T.uncons . T.toUpper . gdIgnoreEscapes$ t of
     Nothing -> throwError.FormatError$
-      "Badly formatted longitude/latitude " <> T.show t
+      "Badly formatted longitude/latitude " <> (T.pack . show) t
     Just (i, r)
       | i == p -> return$ read . T.unpack$ r
       | i == n -> return$ negate . read . T.unpack$ r
       | otherwise -> throwError.FormatError$
-        "Badly formatted longitude/latitude" <> T.show t
+        "Badly formatted longitude/latitude" <> (T.pack . show) t
 
 -- | Parse a 'PersonalName'.
 parsePersonalName :: StructureParser PersonalName
@@ -404,7 +403,7 @@ parseSex = parseNoLinkTag (GDTag "SEX")$ \(t, _) ->
     "M" -> return Male
     "F" -> return Female
     "U" -> return Undetermined
-    _ -> throwError.FormatError$ "Unknown sex code " <> T.show t
+    _ -> throwError.FormatError$ "Unknown sex code " <> (T.pack . show) t
   
 -- | Parse a list of 'IndividualAttribute's.
 parseIndividualAttribute :: MultiMonad [IndividualAttribute]
@@ -479,7 +478,7 @@ parseIndividualEvent = do
         "HUSB" -> return Husband
         "WIFE" -> return Wife
         "BOTH" -> return BothParents
-        _ -> throwError.FormatError$ "Invalid parent " <> T.show t
+        _ -> throwError.FormatError$ "Invalid parent " <> (T.pack . show) t
 
 -- | Parse an 'IndividualEventDetail'.
 parseIndividualEventDetail :: MultiMonad IndividualEventDetail
@@ -505,7 +504,7 @@ parsePedigree = parseNoLinkTag (GDTag "PEDI")$ \(t, _) ->
     "BIRTH" -> return ByBirth
     "FOSTER" -> return Foster
     "SEALING" -> return Sealing
-    _ -> throwError.FormatError$ "Invalid pedigree code " <> T.show t
+    _ -> throwError.FormatError$ "Invalid pedigree code " <> (T.pack . show) t
 
 -- | Parse a 'ChildLinkStatus'.
 parseChildLinkStatus :: StructureParser ChildLinkStatus
@@ -514,7 +513,7 @@ parseChildLinkStatus = parseNoLinkTag (GDTag "STAT")$ \(t, _) ->
     "CHALLENGED" -> return Challenged
     "DISPROVEN" -> return Disproved
     "PROVEN" -> return Proven
-    _ -> throwError.FormatError$ "Invalid child link status " <> T.show t
+    _ -> throwError.FormatError$ "Invalid child link status " <> (T.pack . show) t
 
 -- | Parse a 'SpouseToFamilyLink'.
 parseSpouseToFamilyLink :: StructureParser SpouseToFamilyLink
@@ -549,7 +548,7 @@ parseSourceRecordedEvent = parseNoLinkTag (GDTag "EVEN")$
         case parseDatePeriod date of
           Just v -> return v
           Nothing -> throwError.FormatError$
-            "Badly formatted date period: " <> T.show date
+            "Badly formatted date period: " <> (T.pack . show) date
 
 -- | Parse a 'RepositoryCitation'.
 parseRepositoryCitation :: StructureParser RepositoryCitation
@@ -643,7 +642,7 @@ parseDateValue = parseNoLinkTag (GDTag "DATE")$ \(t, _) ->
          <|> (DateV <$> parseDate t)
   in case date of
     Just x -> return x
-    Nothing -> throwError.FormatError$ "Invalid date format " <> T.show t
+    Nothing -> throwError.FormatError$ "Invalid date format " <> (T.pack . show) t
 
 -- | Decode a calendar escape sequence to a 'Calendar'.
 decodeCalendarEscape :: Maybe GDEscape -> Calendar
@@ -799,7 +798,7 @@ getDate calendar = parseMaybe parser
 parseExactDate :: StructureParser UTCTime
 parseExactDate = parseNoLinkTag (GDTag "DATE")$ \(date, _) ->
   case parseMaybe dateExact (gdIgnoreEscapes date) of
-    Nothing -> throwError.FormatError$ "Bad date \"" <> T.show date <> "\""
+    Nothing -> throwError.FormatError$ "Bad date \"" <> (T.pack . show) date <> "\""
     Just (d, m, y) ->
       return$ UTCTime
         (fromGregorian (fromIntegral y) (fromIntegral m) d)
@@ -813,12 +812,12 @@ parseExactDateTime = parseNoLinkTag (GDTag "DATE")$ \(date, children) -> do
   dt <- case mtime of
     Nothing -> return$ secondsToDiffTime 0
     Just t -> case parseMaybe timeValue t of
-      Nothing -> throwError.FormatError$ "Bad time \"" <> T.show t <> "\""
+      Nothing -> throwError.FormatError$ "Bad time \"" <> (T.pack . show) t <> "\""
       Just Nothing -> return$ secondsToDiffTime 0
       Just (Just time) -> return$ timeToPicos time
 
   case parseMaybe dateExact (gdIgnoreEscapes date) of
-    Nothing -> throwError.FormatError$ "Bad date \"" <> T.show date <> "\""
+    Nothing -> throwError.FormatError$ "Bad date \"" <> (T.pack . show) date <> "\""
     Just (d, m, y) -> return$ UTCTime
       (fromGregorian (fromIntegral y) (fromIntegral m) d) dt
 
@@ -912,7 +911,7 @@ getFamilyEventType = parseMaybe parser
              <|> (MarriageSettlement <$ "MARS")
              <|> (Residence <$ "RESI")
              <|> (FamilyEventType . T.pack <$>
-               ("EVEN" *> gdDelim *> many anyChar))
+               ("EVEN" *> gdDelim *> many anySingle))
 
 -- | Parse an 'IndividualEventType'.
 getIndividualEventType :: T.Text -> Maybe IndividualEventType
@@ -945,7 +944,7 @@ getIndividualEventType = parseMaybe parser
              <|> (Graduation <$ "GRAD")
              <|> (Retirement <$ "RETI")
              <|> (IndividualEventType . T.pack <$>
-               ("EVEN" *> gdDelim *> many anyChar))
+               ("EVEN" *> gdDelim *> many anySingle))
 
 -- | Parse an 'EventType'.
 getEventType :: T.Text -> Maybe EventType
@@ -1012,7 +1011,7 @@ parseQuality = (fmap.fmap) QualityAssessment <$> parseWordTag (GDTag "QUAY")
 parseBoolTag :: GDTag -> StructureParser Bool
 parseBoolTag tag = parseNoLinkTag tag$ \(v, _) ->
   case parseMaybe ynParser (gdIgnoreEscapes v) of
-    Nothing -> throwError.FormatError$ "Expected boolean, saw " <> T.show v
+    Nothing -> throwError.FormatError$ "Expected boolean, saw " <> (T.pack . show) v
     Just yn -> return yn
   where
     ynParser :: Parser Bool
@@ -1022,7 +1021,7 @@ parseBoolTag tag = parseNoLinkTag tag$ \(v, _) ->
 parseWordTag :: GDTag -> StructureParser Word
 parseWordTag tag = parseNoLinkTag tag$ \(v, _) ->
   case parseMaybe parser (gdIgnoreEscapes v) of
-    Nothing -> throwError.FormatError$ "Expected number, saw " <> T.show v
+    Nothing -> throwError.FormatError$ "Expected number, saw " <> (T.pack . show) v
     Just n -> return . read $ n
   where
     parser :: Parser String
@@ -1060,7 +1059,7 @@ nullrref _ _ _ = return ()
 defrref :: Typeable a => RegisterRef (GDRef a)
 defrref _ thisID (GDStructure a) = addReference thisID a
 defrref tag _ _ = throwError.UnexpectedRef$
-  "Referenced structure references another structure " <> T.show tag
+  "Referenced structure references another structure " <> (T.pack . show) tag
 
 -- | Parse a tag which is either a GEDCOM structure, or a reference to the
 -- expected GEDCOM structure.
@@ -1082,7 +1081,7 @@ parseNoLinkTag :: Typeable a
 parseNoLinkTag tag handler = parseTagFull tag nullrref$ \(lb, children) ->
   case lb of
     Left _ -> throwError.UnexpectedRef$
-      "Cannot follow cross references on " <> T.show tag
+      "Cannot follow cross references on " <> (T.pack . show) tag
     Right text -> handler (text, children)
 
 -- | Parse a tag which must contain a cross reference to another structure, not
@@ -1092,7 +1091,7 @@ parseLinkTag tag = parseTagFull tag nullrref$ \(lb, _) ->
   case lb of
     Left ref -> return ref
     Right _ -> throwError.RequiredRef$
-      "Expected cross reference was missing in " <> T.show tag
+      "Expected cross reference was missing in " <> (T.pack . show) tag
 
 -- | The most general tag parsing function.
 parseTagFull :: Typeable a

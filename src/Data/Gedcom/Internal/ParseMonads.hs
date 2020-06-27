@@ -34,9 +34,8 @@ import Data.Either
 import Data.Foldable
 import Data.Gedcom.Internal.CoreTypes
 import Data.Maybe
-import Data.Monoid
 import qualified Data.Map as M
-import qualified Data.Text.All as T
+import qualified Data.Text as T
 
 -- | A parser that extracts a GEDCOM structure from a GEDCOM subtree.
 type StructureParser a =
@@ -93,7 +92,7 @@ parseRequired tag p = do
   case r of
     Just v -> return v
     Nothing -> throwError.TagError$
-      "Could not find required " <> T.show tag <> " tag"
+      "Could not find required " <> (T.pack . show) tag <> " tag"
 
 -- | A monad for parsing an instance of a GEDCOM structure from a GEDCOM
 -- subtree.
@@ -109,7 +108,7 @@ addReference :: Typeable a
 addReference thisID value = StructureMonad$ do
   alreadySeen <- M.member thisID <$> lift get
   when alreadySeen$
-    throwError.DuplicateRef$ "Duplicate definition of " <> T.show thisID
+    throwError.DuplicateRef$ "Duplicate definition of " <> (T.pack . show) thisID
   lift.modify$ M.insert thisID (toDyn value)
   return ()
 

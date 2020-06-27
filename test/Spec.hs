@@ -4,9 +4,8 @@ import Data.Gedcom.Internal.CoreTypes
 import Data.Gedcom.Internal.LineParser
 import Data.Gedcom.Internal.ParseMonads
 import Data.Gedcom.Internal.Parser
-import Data.Monoid
 import Data.Void
-import qualified Data.Text.All as T
+import qualified Data.Text as T
 import Test.Hspec
 import Text.Megaparsec
 
@@ -54,7 +53,7 @@ parseStructure Nothing p = Error "Line parse error"
 parseStructure (Just v) p = case runStructure (p v) of
     (Right (Left _), _) -> NoMatch
     (Right (Right m), _) -> Match m
-    (Left err, _) -> Error$ T.show err
+    (Left err, _) -> Error$ (T.pack . show) err
 
 noEscapes :: T.Text -> [(Maybe GDEscape, T.Text)]
 noEscapes v = [(Nothing, v)]

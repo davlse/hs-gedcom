@@ -13,17 +13,14 @@ Portability: GHC
 This module parses a Text string into a GEDCOM syntax tree.
 
 -}
-module Data.Gedcom.Internal.LineParser (
-  gdRoot, gdDelim
-) where
+module Data.Gedcom.Internal.LineParser where
 
 import Control.Monad
 import Data.Char
 import Data.Gedcom.Internal.Common
 import Data.Gedcom.Internal.CoreTypes
 import Data.Maybe
-import Data.Monoid
-import qualified Data.Text.All as T
+import qualified Data.Text as T
 import Text.Megaparsec
 import Text.Megaparsec.Char
 
@@ -58,8 +55,12 @@ gdLevel = GDLevel . read <$> count' 1 2 digitChar <* gdDelim
 
 -- | Parse line_item.
 gdLineItem :: Parser GDLineItem
-gdLineItem = fmap GDLineItem . some$
-  (,) <$> optional gdEscape <*> (T.concat <$> some gdAnyChar)
+gdLineItem = eitherP gdLineItem' (lookAhead gdTerminator) <&> \case
+  Left v -> v
+  Right _ -> GDLineItem [(Nothing, "")]
+  where
+    gdLineItem' = fmap GDLineItem . some $
+      (,) <$> optional gdEscape <*> (T.concat <$> some gdAnyChar)
 
 -- | Parse pointer.
 gdPointer :: Parser GDXRefID
@@ -87,7 +88,7 @@ gdTag = GDTag . T.toUpper . T.pack <$> many gdAlphaNum
 
 -- | parse terminator.
 gdTerminator :: Parser T.Text
-gdTerminator = "\n" <|> "\r" <|> "\r\n" <|> "\n\r"
+gdTerminator = "\r\n" <|> "\n\r" <|> "\n" <|> "\r"
 
 -- | Parse xref_ID.
 gdXRefID :: Parser (Maybe GDXRefID)
@@ -144,5 +145,5 @@ gdTree pid n = try$ do
 
 -- | Parse the raw GEDCOM syntax tree.
 gdRoot :: Parser GDRoot
-gdRoot = GDRoot <$> many (gdTree (GDXRefID "") 0)
+gdRoot = GDRoot <$> (many (gdTree (GDXRefID "") 0) <* eof)
 

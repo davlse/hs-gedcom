@@ -33,9 +33,8 @@ module Data.Gedcom.Internal.CoreTypes (
 import Control.Arrow
 import Data.Char
 import Data.List
-import Data.Monoid
 import Data.Typeable
-import qualified Data.Text.All as T
+import qualified Data.Text as T
 
 -- | An error arising from dereferencing a 'GDRef'
 data GDRefError =
@@ -95,6 +94,9 @@ newtype GDLevel = GDLevel Int deriving (Show, Eq, Ord, Num)
 -- | Extract the line text
 gdLineData :: GDLineItem -> [(Maybe GDEscape, T.Text)]
 gdLineData (GDLineItem v) = v
+
+instance Semigroup GDLineItem where
+  (<>) = mappend
 
 instance Monoid GDLineItem where
   mempty = GDLineItem []

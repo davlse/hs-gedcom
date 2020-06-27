@@ -30,12 +30,12 @@ import Data.Gedcom.Internal.ParseMonads
 import Data.Gedcom.Internal.Parser
 import Data.Gedcom.Structure
 import Data.Maybe
-import Data.Monoid
 import Data.Text.Encoding.ANSEL
 import Data.Typeable
 import qualified Data.ByteString as B
 import qualified Data.Map as M
-import qualified Data.Text.All as T
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import Text.Megaparsec
 
 -- | A table of cross references
@@ -79,8 +79,8 @@ parseGedcomString mfilename intext =
 
   in case partitionEithers trees of
     ([], []) -> Left . LineFormatError$
-      "Invalid format (is " <> T.show filename <> " really a gedcom file?)"
-    (err:_, []) -> Left . LineFormatError . T.show$ err
+      "Invalid format (is " <> (T.pack . show) filename <> " really a gedcom file?)"
+    (err:_, []) -> Left . LineFormatError . T.pack . show$ err
     (_, dtrees) -> case partitionEithers.fmap doParseGedcom$ dtrees of
       ([], []) -> Left . LineFormatError$ "Unknown character encoding"
       (err:_, []) -> Left err
@@ -100,4 +100,3 @@ parseGedcomFile ::
   FilePath -- ^ The file to read
   -> IO (Either GDError (Gedcom, XRefTable)) -- ^ The Gedcom data and cross reference table, or an error
 parseGedcomFile path = parseGedcomString (Just path) <$> B.readFile path
-

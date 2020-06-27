@@ -21,19 +21,12 @@ import Data.Functor
 import Data.Maybe
 import Data.Time.Clock
 import Data.Void
-import qualified Data.Text.All as T
+import qualified Data.Text as T
 import Text.Megaparsec
 import Text.Megaparsec.Char
 
 -- | Parsers from 'T.Text' using the default error component.
 type Parser = Parsec Void T.Text
-
-infixl 1 <&>
-
--- | Flipped version of '<$>'
-(<&>) :: Functor f => f a -> (a -> b) -> f b
-as <&> f = f <$> as
-{-# INLINE (<&>) #-}
 
 -- | Replace failure with a default value
 withDefault :: Alternative f => a -> f a -> f a
